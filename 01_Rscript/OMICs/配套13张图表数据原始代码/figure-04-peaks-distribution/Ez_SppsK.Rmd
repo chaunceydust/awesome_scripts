@@ -1,0 +1,115 @@
+---
+title: "Ez_SppsK"
+author: "jmzeng1314@163.com"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+ 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = F)
+knitr::opts_chunk$set(message  = F) 
+```
+
+> * [我的博客](http://www.bio-info-trainee.com/)
+ * [我们的论坛](http://www.biotrainee.com/forum.php)
+ * [捐赠我](http://www.bio-info-trainee.com/donate)
+
+## 背景介绍
+
+这里面描述一下背景, 比如：
+
+## 读入peaks
+ 
+ 
+```{r}
+bedPeaksFile 		= 'oldBedFiles/Ez_SppsKO.narrowPeak.bed'; 
+bedPeaksFile
+## loading packages
+require(ChIPseeker)
+# BiocManager::install("TxDb.Dmelanogaster.UCSC.dm3.ensGene")
+# BiocManager::install("org.Dm.eg.db")
+require(TxDb.Dmelanogaster.UCSC.dm3.ensGene  )
+txdb <- TxDb.Dmelanogaster.UCSC.dm3.ensGene
+require(clusterProfiler) 
+peak <- readPeakFile( bedPeaksFile )  
+keepChr= !grepl('Het',seqlevels(peak)) 
+seqlevels(peak, pruning.mode="coarse") <- seqlevels(peak)[keepChr]
+cat(paste0('there are ',length(peak),' peaks for this data' ))
+```
+ 
+## peaks性质
+
+### ChIP Peaks over Chromosomes.
+首先查看这些peaks在各个染色体的分布，全局浏览
+```{r, fig.height=10} 
+covplot(peak, weightCol="V5") 
+```
+
+### Heatmap of ChIP peaks binding to TSS regions
+然后查看这些peaks在所有基因的启动子附近的分布情况，热图模式
+```{r} 
+promoter <- getPromoters(TxDb=txdb, upstream=3000, downstream=3000)
+tagMatrix <- getTagMatrix(peak, windows=promoter) 
+tagHeatmap(tagMatrix, xlim=c(-3000, 3000), color="red")
+```
+
+### Then Average Profile of ChIP peaks binding to TSS region
+然后查看这些peaks在所有基因的启动子附近的分布情况，信号强度曲线图
+```{r} 
+plotAvgProf(tagMatrix, xlim=c(-3000, 3000), 
+            xlab="Genomic Region (5'->3')", ylab = "Read Count Frequency")
+```
+
+## peaks的注释
+注释结果如下表，鼠标滑动可以查看全部详细信息：
+```{r} 
+peakAnno <- annotatePeak(peak, tssRegion=c(-3000, 3000), 
+                         TxDb=txdb, annoDb="org.Dm.eg.db") 
+peakAnno_df <- as.data.frame(peakAnno)
+sampleName=basename(strsplit(bedPeaksFile,'\\.')[[1]][1])
+write.csv(peakAnno_df,paste0(sampleName,'_peakAnno_df.csv'))
+DT::datatable(peakAnno_df,
+                  extensions = 'FixedColumns',
+                  options = list(
+                    #dom = 't',
+                    scrollX = TRUE,
+                    fixedColumns = TRUE
+                  ))
+```
+
+可以对peaks的性质做一些可视化，如下：
+
+```{r} 
+#png('Pie-summarize the distribution of peaks over different type of features.png')
+plotAnnoPie(peakAnno)
+#png('Bar-summarize the distribution of peaks over different type of features.png')
+plotAnnoBar(peakAnno)
+#png('vennpie-summarize the distribution of peaks over different type of features.png')
+#vennpie(peakAnno)
+```
+
+还可以查看peaks的长度分布，只统计长度在1000bp以下的peaks
+
+```{r}
+peaksLength=abs(peakAnno_df$end-peakAnno_df$start)
+peaksLength=peaksLength[peaksLength<1000]  
+hist(peaksLength, breaks = 50, col = "lightblue", xlim=c(0,1000),xlab="peak length", main="Histogram of peak length") 
+```
+
+## peaks相关基因的注释
+
+这里可以把peaks先分类再注释，也可以直接拿所有peaks相关基因去富集分析，如果要分类，可以根据:
+
+- Promoter
+- 5’ UTR
+- 3’ UTR
+- Exon
+- Intron
+- Downstream
+- Intergenic
+
+但是如果peaks本来就不多，那么分类后基因太少，注释可能并没有意义，这里只给出所有peaks相关基因的注释结果。
+
+
+ 

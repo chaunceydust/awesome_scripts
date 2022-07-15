@@ -1,0 +1,40 @@
+computeMatrix reference-point  --referencePoint TSS  -p 4  \
+-b 5000 -a 5000    \
+-R G4_in.bed  \
+-S Spps_WT.bw  \
+--skipZeros  -o G4_in_matrix1_test_TSS.gz  \
+--outFileSortedRegions G4_in_regions1_test_genes.bed
+
+plotHeatmap -m G4_in_matrix1_test_TSS.gz  -out G4_in_Heatmap.png
+
+ 
+
+bamCompare -b1 ../Spps_WT.merge.bam -b2 ../Input_WT.merge.bam  \
+--operation log2 -of bigwig -o  Spps_WT.log2.bw -p 4
+
+
+computeMatrix reference-point  --referencePoint center  -p 4  \
+-b 5000 -a 5000    \
+-R G4_in.bed  \
+-S Spps_WT.log2.bw   \
+--skipZeros  -o G4_in_matrix1_log2_TSS.gz  \
+--outFileSortedRegions G4_in_regions1_log2_genes.bed
+plotHeatmap -m G4_in_matrix1_log2_TSS.gz  -out G4_in_log2_Heatmap.png
+
+
+ ls ../*_WT.merge.bam |while read id;
+ do 
+ echo bamCompare -b1 $id -b2 ../Input_WT.merge.bam  \
+ --operation log2 -of bigwig -o  $(basename $id "_WT.merge.bam" ).log2.bw -p 4
+done 
+
+echo computeMatrix reference-point  --referencePoint center  -p 4  \
+-b 5000 -a 5000    \
+-R G{1..7}_in.bed  \
+-S *_WT.log2.bw   \
+--skipZeros  -o G4_in_matrix1_log2_TSS.gz  \
+--outFileSortedRegions all_in_regions1_log2_genes.bed
+plotHeatmap -m all_in_matrix1_log2_TSS.gz  -out all_in_log2_Heatmap.png
+
+
+

@@ -1,0 +1,1 @@
+Name	URL	ProductID	Category	Items_id	Class	Class_id	reallyPrice	originalPrice	description	shopId	favourableDesc1	favourableDesc2	goodRateShow	poorRateShow	generalRateShow	goodCount	generalCount	poorCount	commentCount	defaultGoodCount	averageScore
